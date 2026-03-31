@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Debarcoder · Konversi Teks & Link ke Barcode/QR</title>
+    <!-- Font Awesome Icons (v6 free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Library: JsBarcode untuk generate barcode 1D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+    <!-- Library: QRCode untuk generate QR Code (canvas) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <!-- Library: html5-qrcode untuk decode (barcode & QR dari gambar) -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f5f7fc 0%, #eef2f8 100%);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+        }
+
+        /* container utama */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* header */
+        .brand {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .brand h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1A2A3F, #0F2C3D, #1E3A5F);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+            text-shadow: 2px 2px 12px rgba(0,0,0,0.05);
+        }
+
+        .brand .tagline {
+            color: #2c5368;
+            font-weight: 500;
+            margin-top: 0.5rem;
+            font-size: 1rem;
+            background: rgba(255,255,240,0.6);
+            display: inline-block;
+            padding: 0.2rem 1.2rem;
+            border-radius: 40px;
+            backdrop-filter: blur(2px);
+        }
+
+        /* dua kolom utama (flex/grid) */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* card style */
+        .card {
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.02);
+            overflow: hidden;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .card-header {
+            background: rgba(255,255,245,0.7);
+            padding: 1.2rem 1.8rem;
+            border-bottom: 1px solid #e2edf2;
+        }
+
+        .card-header h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1f3e48;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-header h2 i {
+            color: #2c7da0;
+            font-size: 1.5rem;
+        }
+
+        .card-body {
+            padding: 1.8rem;
+        }
+
+        /* form elements */
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            font-weight: 600;
+            color: #1e3b44;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            letter-spacing: -0.2px;
+        }
+
+        textarea, input[type="text"], select, .file-label {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border-radius: 1.2rem;
+            border: 1.5px solid #cfdfe8;
+            background: white;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            outline: none;
+            resize: vertical;
+        }
+
+        textarea:focus, input:focus, select:focus {
+            border-color: #2c7da0;
+            box-shadow: 0 0 0 3px rgba(44,125,160,0.2);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            background: #f3f9fe;
+            padding: 0.6rem 1rem;
+            border-radius: 2rem;
+            border: 1px solid #d9e9f0;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        button {
+            background: #1f4e6e;
+            border: none;
+            padding: 0.8rem 1.6rem;
+            border-radius: 2rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        button i {
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: #0f3b54;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 18px -8px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .btn-secondary {
+            background: #4c6a7c;
+        }
+
+        .btn-secondary:hover {
+            background: #2f4b5e;
+        }
+
+        .result-area {
+            margin-top: 1.5rem;
+            background: #f8fafd;
+            border-radius: 1.5rem;
+            padding: 1.2rem;
+            text-align: center;
+            border: 1px dashed #bdd3df;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .canvas-wrapper {
+            background: white;
+            padding: 1rem;
+            border-radius: 1rem;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .decode-result {
+            margin-top: 1rem;
+            background: #eef4f8;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border-left: 4px solid #2c7da0;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 180px;
+            border-radius: 1rem;
+            margin-top: 1rem;
+            border: 1px solid #cbdde6;
+        }
+
+        .file-input {
+            margin-bottom: 1rem;
+        }
+
+        .flex-btns {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        hr {
+            margin: 1rem 0;
+            border-color: #d4e2ea;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: #5d7f8c;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 780px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            body {
+                padding: 1rem;
+            }
+            .brand h1 {
+                font-size: 2.2rem;
+            }
+        }
+
+        .error-message {
+            color: #c7362b;
+            background: #ffe9e7;
+            padding: 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            margin-top: 0.8rem;
+        }
+
+        .success-text {
+            color: #1f6e43;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="brand">
+        <h1><i class="fas fa-qrcode"></i> Debarcoder <i class="fas fa-barcode"></i></h1>
+        <div class="tagline">Konversi ⇄ Teks / Link • Barcode • QR Code • Simpan sebagai Gambar</div>
+    </div>
+
+    <div class="dashboard">
+        <!-- Kiri: ENCODE (Teks/Link → Barcode/QR) -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-arrow-right-to-bracket"></i> Encode → Barcode / QR</h2>
+            </div>
+            <div class="card-body">
+                <div class="input-group">
+                    <label><i class="fas fa-pen-alt"></i> Masukkan Kalimat atau Link</label>
+                    <textarea id="encodeText" rows="3" placeholder="Contoh: https://debarcoder.com atau Halo Dunia!"></textarea>
+                </div>
+                <div class="input-group">
+                    <label><i class="fas fa-code-branch"></i> Tipe Kode</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="codeType" value="barcode" checked> <i class="fas fa-barcode"></i> Barcode (Code128)
+                        </label>
+                        <label>
+                            <input type="radio" name="codeType" value="qrcode"> <i class="fas fa-qrcode"></i> QR Code
+                        </label>
+                    </div>
+                </div>
+                <div class="flex-btns">
+                    <button id="generateBtn"><i class="fas fa-sync-alt"></i> Generate</button>
+                    <button id="downloadBtn" class="btn-secondary" disabled><i class="fas fa-download"></i> Simpan sebagai Foto</button>
+                </div>
+                <div class="result-area" id="encodeResultArea">
+                    <div class="canvas-wrapper" id="canvasWrapper">
+                        <canvas id="outputCanvas" width="300" height="150" style="max-width:100%; height:auto;"></canvas>
+                    </div>
+                    <small style="margin-top: 10px; color: #6c8d9c;"><i class="fas fa-info-circle"></i> Hasil akan tampil di sini</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kanan: DECODE (Dari Gambar Barcode/QR → Teks/Link) -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-arrow-left-from-bracket"></i> Decode ← Barcode / QR</h2>
+            </div>
+            <div class="card-body">
+                <div class="input-group">
+                    <label><i class="fas fa-image"></i> Upload Gambar (Barcode atau QR)</label>
+                    <input type="file" id="decodeImageInput" accept="image/*" class="file-input" style="padding: 0.5rem;">
+                    <div id="imagePreviewContainer" style="text-align: center;"></div>
+                </div>
+                <button id="decodeBtn"><i class="fas fa-search"></i> Konversi ke Teks / Link</button>
+                <div class="result-area" id="decodeResultArea" style="min-height: 130px;">
+                    <div id="decodeOutputText" class="decode-result" style="background:#f0f5f9;">
+                        <i class="fas fa-hourglass-half"></i> Belum ada gambar diproses
+                    </div>
+                </div>
+                <hr>
+                <div class="info-note">
+                    <small><i class="fas fa-lightbulb"></i> Tips: Hasil encode (barcode/QR) bisa difoto / screenshot, lalu upload di sini untuk dikonversi kembali.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <i class="fas fa-code"></i> Debarcoder — Ubah kata/link menjadi kode visual, dan sebaliknya. Semua proses di sisi klien, aman & cepat.
+    </footer>
+</div>
+
+<script>
+    (function(){
+        // DOM elements
+        const encodeTextarea = document.getElementById('encodeText');
+        const radioBarcode = document.querySelector('input[value="barcode"]');
+        const radioQr = document.querySelector('input[value="qrcode"]');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const decodeImageInput = document.getElementById('decodeImageInput');
+        const decodeBtn = document.getElementById('decodeBtn');
+        const decodeOutputDiv = document.getElementById('decodeOutputText');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+
+        // state untuk mengetahui apakah canvas saat ini berisi hasil generate (barcode/qr) dan tipe terakhir
+        let lastGeneratedType = 'barcode';   // 'barcode' or 'qrcode'
+        let lastGeneratedText = '';
+        let isCanvasReady = false;
+
+        // ---- Fungsi Generate Barcode (menggunakan JsBarcode) ----
+        function generateBarcode(text) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // Atur ukuran canvas lebih proporsional untuk barcode
+                    outputCanvas.width = 400;
+                    outputCanvas.height = 120;
+                    JsBarcode(outputCanvas, text, {
+                        format: "CODE128",
+                        width: 2,
+                        height: 80,
+                        displayValue: true,
+                        fontSize: 14,
+                        margin: 10,
+                        background: "#ffffff",
+                        lineColor: "#000000"
+                    });
+                    resolve(true);
+                } catch(err) {
+                    reject(err);
+                }
+            });
+        }
+
+        // ---- Fungsi Generate QR Code (menggunakan library qrcode) ----
+        function generateQR(text) {
+            return new Promise((resolve, reject) => {
+                // ukuran QR lebih persegi
+                outputCanvas.width = 250;
+                outputCanvas.height = 250;
+                QRCode.toCanvas(outputCanvas, text, {
+                    width: 250,
+                    margin: 2,
+                    color: {
+                        dark: '#000000',
+                        light: '#ffffff'
+                    },
+                    errorCorrectionLevel: 'M'
+                }, function (error) {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(true);
+                    }
+                });
+            });
+        }
+
+        // Fungsi utama generate berdasarkan pilihan user
+        async function handleGenerate() {
+            const rawText = encodeTextarea.value.trim();
+            if (rawText === "") {
+                alert("❌ Masukkan kalimat atau link terlebih dahulu!");
+                encodeTextarea.focus();
+                return;
+            }
+
+            // cek tipe
+            const isBarcode = radioBarcode.checked;
+            lastGeneratedType = isBarcode ? 'barcode' : 'qrcode';
+            lastGeneratedText = rawText;
+
+            // Tampilkan loading state di canvas (opsional)
+            const ctx = outputCanvas.getContext('2d');
+            ctx.fillStyle = "#f0f4f8";
+            ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+            ctx.fillStyle = "#2c7da0";
+            ctx.font = "bold 14px sans-serif";
+            ctx.fillText("Memproses...", 20, 40);
+
+            try {
+                if (isBarcode) {
+                    await generateBarcode(rawText);
+                } else {
+                    await generateQR(rawText);
+                }
+                isCanvasReady = true;
+                downloadBtn.disabled = false;   // aktifkan tombol simpan foto
+                // berikan feedback sukses halus
+                const wrapper = document.getElementById('canvasWrapper');
+                wrapper.style.boxShadow = "0 0 0 2px #2c7da0, 0 8px 20px rgba(0,0,0,0.1)";
+                setTimeout(() => {
+                    wrapper.style.boxShadow = "";
+                }, 600);
+            } catch (err) {
+                console.error(err);
+                alert("Gagal generate kode: " + (err.message || "unknown error"));
+                isCanvasReady = false;
+                downloadBtn.disabled = true;
+                // tampilkan pesan error di canvas
+                const ctxErr = outputCanvas.getContext('2d');
+                ctxErr.fillStyle = "#ffe0db";
+                ctxErr.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+                ctxErr.fillStyle = "#c7362b";
+                ctxErr.font = "12px monospace";
+                ctxErr.fillText("Error: teks terlalu panjang atau tidak valid", 10, 50);
+            }
+        }
+
+        // ---- Simpan canvas sebagai foto (PNG) ----
+        function downloadAsImage() {
+            if (!isCanvasReady) {
+                alert("Belum ada kode yang digenerate. Silahkan generate terlebih dahulu.");
+                return;
+            }
+            try {
+                // ambil data URL dari canvas
+                const dataURL = outputCanvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+                const fileType = lastGeneratedType === 'barcode' ? 'barcode' : 'qrcode';
+                link.download = `debarcoder_${fileType}_${timestamp}.png`;
+                link.href = dataURL;
+                link.click();
+            } catch(e) {
+                alert("Gagal menyimpan gambar: " + e.message);
+            }
+        }
+
+        // ---- DECODE: Menggunakan html5-qrcode untuk membaca barcode / QR dari file gambar ----
+        let html5QrCodeScanner = null; // kita tidak perlu scanner permanen, cukup pakai instance sederhana untuk decode file
+
+        async function decodeImageFromFile(file) {
+            if (!file) {
+                throw new Error("Tidak ada file gambar.");
+            }
+            // Buat instance Html5Qrcode (dengan element dummy, karena kita hanya pakai scanFile)
+            const qrcodeScanner = new Html5Qrcode("dummy-decoder"); // id dummy tidak akan ditampilkan, tapi wajib untuk konstruktor
+            // scanFile metode promise
+            try {
+                // opsi scanning
+                const result = await qrcodeScanner.scanFile(file, /* showImage= */ false);
+                // result adalah string hasil decode
+                return result;
+            } catch (err) {
+                console.warn("decode error", err);
+                throw new Error("Tidak dapat membaca kode. Pastikan gambar berisi Barcode (Code128/EAN) atau QR Code yang jelas.");
+            } finally {
+                // bersihkan instance
+                if (qrcodeScanner && typeof qrcodeScanner.clear === 'function') {
+                    await qrcodeScanner.clear().catch(e=>console.warn);
+                }
+            }
+        }
+
+        // handle preview gambar yang diupload
+        function previewUploadedImage(file) {
+            return new Promise((resolve) => {
+                if (!file) {
+                    imagePreviewContainer.innerHTML = '';
+                    resolve(null);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = e.target.result;
+                    imgElement.classList.add('preview-img');
+                    imgElement.style.maxWidth = '200px';
+                    imgElement.style.maxHeight = '160px';
+                    imgElement.style.borderRadius = '12px';
+                    imgElement.style.marginTop = '8px';
+                    imagePreviewContainer.innerHTML = '';
+                    imagePreviewContainer.appendChild(imgElement);
+                    resolve(e.target.result);
+                };
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleDecode() {
+            const fileInput = decodeImageInput;
+            const file = fileInput.files[0];
+            if (!file) {
+                decodeOutputDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Pilih gambar (barcode/QR) terlebih dahulu.`;
+                decodeOutputDiv.style.borderLeftColor = "#c7362b";
+                return;
+            }
+
+            // validasi tipe file
+            if (!file.type.startsWith('image/')) {
+                decodeOutputDiv.innerHTML = `<i class="fas fa-times-circle"></i> Harap unggah file gambar (jpg, png, dll).`;
+                decodeOutputDiv.style.borderLeftColor = "#c7362b";
+                return;
+            }
+
+            // tampilkan preview
+            await previewUploadedImage(file);
+            
+            // set status loading
+            decodeOutputDiv.innerHTML = `<i class="fas fa-spinner fa-pulse"></i> Mendecode gambar... Mohon tunggu.`;
+            decodeOutputDiv.style.borderLeftColor = "#2c7da0";
+
+            try {
+                const decodedText = await decodeImageFromFile(file);
+                if (decodedText && decodedText.trim() !== "") {
+                    decodeOutputDiv.innerHTML = `
+                        <i class="fas fa-check-circle" style="color:#1f6e43;"></i> 
+                        <strong>Hasil Konversi (Teks / Link):</strong><br>
+                        <span style="word-break:break-all; font-family: monospace;">${escapeHtml(decodedText)}</span>
+                        <br><small><i class="fas fa-undo-alt"></i> Kamu bisa salin teks di atas.</small>
+                    `;
+                    decodeOutputDiv.style.borderLeftColor = "#1f6e43";
+                } else {
+                    decodeOutputDiv.innerHTML = `<i class="fas fa-file-image"></i> Gambar terbaca, tetapi tidak mengandung data yang valid.`;
+                    decodeOutputDiv.style.borderLeftColor = "#e6a017";
+                }
+            } catch (error) {
+                console.error(error);
+                decodeOutputDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> Gagal mendecode: ${escapeHtml(error.message)}<br><small>Pastikan gambar berisi barcode (Code128) atau QR code yang jelas, tidak buram.</small>`;
+                decodeOutputDiv.style.borderLeftColor = "#c7362b";
+            }
+        }
+
+        // helper sederhana untuk menghindari XSS
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+                return c;
+            });
+        }
+
+        // Event listener untuk generate & download
+        generateBtn.addEventListener('click', handleGenerate);
+        downloadBtn.addEventListener('click', downloadAsImage);
+        decodeBtn.addEventListener('click', handleDecode);
+        
+        // Jika user ganti text atau radio, bisa reset status tombol download? (opsional, biar tetap ada)
+        // Namun jika user generate ulang maka tombol download aktif kembali oleh handleGenerate.
+        // Saat pertama kali load, tampilkan contoh default atau placeholder
+        function initializeDefault() {
+            // set default text agar user melihat contoh
+            encodeTextarea.value = "https://debarcoder.demo atau Halo Dunia!";
+            radioBarcode.checked = true;
+            // generate contoh default barcode agar canvas tidak kosong
+            setTimeout(() => {
+                handleGenerate().catch(e=>console.warn);
+            }, 100);
+        }
+
+        // reset preview ketika file diubah (opsional)
+        decodeImageInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                previewUploadedImage(this.files[0]);
+                decodeOutputDiv.innerHTML = `<i class="fas fa-image"></i> Gambar siap. Klik "Konversi ke Teks / Link" untuk memproses.`;
+                decodeOutputDiv.style.borderLeftColor = "#2c7da0";
+            } else {
+                imagePreviewContainer.innerHTML = '';
+                decodeOutputDiv.innerHTML = `<i class="fas fa-hourglass-half"></i> Belum ada gambar diproses`;
+                decodeOutputDiv.style.borderLeftColor = "#bdd3df";
+            }
+        });
+
+        initializeDefault();
+    })();
+</script>
+</body>
+</html>
